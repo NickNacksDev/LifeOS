@@ -295,3 +295,5 @@ The long-term goal is not simply to build a chatbot, but to create a cohesive pe
 ## Disclaimer
 
 LifeOS is a personal project and is under active development. Features, architecture, and technology choices may change as the system evolves.
+
+[My Trello Board](https://trello.com/b/IHT8hSZw/7-lifeos)
