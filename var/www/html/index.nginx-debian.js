@@ -2,16 +2,98 @@
 const chatbox = document.getElementById("chatbox");
 const userInput = document.getElementById("userInput");
 const sendButton = document.getElementById("sendButton");
+let token_count = 0;
+let thinking = false;
+
+// Contextual AI information
+day_of_week=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+current_month=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
 
 // TODO: Handle the full context on the server side.
 // This will use more and more bandwidth over time.
-fullContext = []
+const R1_SYSTEM_PROMPT = `
+You are an AI assistant that rigorously follows this response protocol:
+
+1. First, conduct a detailed analysis of the question. Consider different angles,
+potential solutions, and reason through the problem step-by-step. Enclose this
+entire thinking process within <think> and </think> tags.
+
+2. After the thinking section, provide a clear, concise, and direct answer to
+the user's question. Separate the answer from the think section with a newline.
+
+Ensure that the thinking process is thorough but remains focused on the query.
+The final answer should be standalone and not reference the thinking section.
+`.trim();
+
+fullContext = [{
+    role: "system",
+    content: R1_SYSTEM_PROMPT
+}]
 
 // Markdown configuration
 marked.setOptions({
     gfm: true,
     breaks: false
 });
+
+// Determine if a generated expression looks close enough to LaTeX
+// Regex looks for:
+// \x
+// or
+// ^ or _
+function looksLikeLatex(s) {
+    return /\\[a-zA-Z]+|[\^_]/.test(s);
+}
+
+// Parse the LaTeX, and replace likely LaTeX function delimeters
+function normalizeLatex(text) {
+    let result = "";
+    let i = 0;
+
+    while (i < text.length) {
+        const char = text[i];
+
+        // Look for a potential math expression beginning with [ or (
+        if (char === "[" || char === "(") {
+            const open = char;
+            const close = char === "[" ? "]" : ")";
+            let depth = 1;
+            let j = i + 1;
+
+            while (j < text.length && depth > 0) {
+                // Ignore escaped characters
+                if (text[j] === "\\") {
+                    j += 2;
+                    continue;
+                }
+
+                if (text[j] === open) depth++;
+                if (text[j] === close) depth--;
+
+                j++;
+            }
+
+            // Found a matching closing delimiter
+            if (depth === 0) {
+                const content = text.slice(i + 1, j - 1);
+
+                if (looksLikeLatex(content)) {
+                    const left = open === "[" ? "\\[" : "\\(";
+                    const right = close === "]" ? "\\]" : "\\)";
+
+                    result += `${left}${content.trim()}${right}`;
+                    i = j;
+                    continue;
+                }
+            }
+        }
+
+        result += char;
+        i++;
+    }
+
+    return result;
+}
 
 /* type can be (change from string):
     "received"
@@ -31,13 +113,40 @@ function addMessage(text, type) {
 
     // Return an object that can be updated with the new streamed message content
     return {
-        update(text) {
-            message.innerHTML = marked.parse(text);
+        update(text, done=false) {
+            if (String(text).trim().startsWith("<think>") && !String(text).includes("</think>")) {
+                if (!thinking) {
+                    message.innerHTML = `
+                    <div class="thinking-indicator">
+                        <div class="thinking-pulse">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                        <span class="thinking-text">Thinking</span>
+                    </div>
+                    `;
+
+                    thinking = true;
+                }
+                return;
+            }
+
+            if (String(text).includes("</think>")) {
+                thinking = false;
+                text = String(text).split("</think>")[1];
+                if (!String(text).trim()) {
+                    return;
+                }
+            }
+
+            const parsedHTML = marked.parse(text);
+            message.innerHTML = normalizeLatex(parsedHTML);
 
             renderMathInElement(message, {
                 delimiters: [
                     {left: "$$", right: "$$", display: true},
-                    {left: "$", right: "$", display: false},
+                    {left: "\\$", right: "\\$", display: false},
                     {left: "\\(", right: "\\)", display: false},
                     {left: "\\[", right: "\\]", display: true}
                 ],
@@ -121,9 +230,20 @@ async function sendMessage() {
     userInput.value = "";
     userInput.focus();
 
+    // Add date time for the AI to reference
+    const today = new Date();
+    fullContext.push({
+        role: "system",
+        content: `Current date/time (authoritative and real time): ${day_of_week[today.getDay()]}, \
+        ${current_month[today.getMonth() - 1]} ${today.getDate()}, ${today.getFullYear()} \
+        ${today.getHours()}:${today.getMinutes()} ${today.getHours() > 11 ? "PM" : "AM"}`
+    });
+
+    // Add the user's message
     fullContext.push({
         role: "user",
-        content: (new Date()).toString() + ": " + text,
+        content: text,
+        think: "true"
     });
 
     // Ask the server for a response
@@ -133,7 +253,7 @@ async function sendMessage() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: "rude:latest",
+            model: "hf.co/lmstudio-community/InternVL3_5-14B-GGUF:Q4_K_M",
             messages: fullContext,
             stream: true
         })
@@ -168,15 +288,19 @@ async function sendMessage() {
             const data = JSON.parse(line);
             if (data.message?.content) {
                 messageString += data.message.content;
-                responseMessage.update(messageString);
+                responseMessage.update(messageString, data.done);
             }
 
             if (data.done) {
+                // Update token count
+                const tokenCounter = document.getElementById("tokenCount");
+                token_count = data["prompt_eval_count"] + data["eval_count"];
+                tokenCounter.innerHTML = `Token count: ${token_count}`;
+
                 // Add the assistant's context
                 fullContext.push({
                     role: "assistant",
-                    content: messageString,
-                    messageSentAt: new Date()
+                    content: messageString
                 });
 
                 return;
