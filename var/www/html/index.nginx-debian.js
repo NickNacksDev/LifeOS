@@ -10,25 +10,26 @@ day_of_week=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "
 current_month=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
 
 // TODO: Handle the full context on the server side.
-// This will use more and more bandwidth over time.
-const R1_SYSTEM_PROMPT = `
-You are an AI assistant that rigorously follows this response protocol:
+// const R1_SYSTEM_PROMPT = `
+// You are an AI assistant that rigorously follows this response protocol:
 
-1. First, conduct a detailed analysis of the question. Consider different angles,
-potential solutions, and reason through the problem step-by-step. Enclose this
-entire thinking process within <think> and </think> tags.
+// 1. First, conduct a detailed analysis of the question. Consider different angles,
+// potential solutions, and reason through the problem step-by-step. Enclose this
+// entire thinking process within <think> and </think> tags.
 
-2. After the thinking section, provide a clear, concise, and direct answer to
-the user's question. Separate the answer from the think section with a newline.
+// 2. After the thinking section, provide a clear, concise, and direct answer to
+// the user's question. Separate the answer from the think section with a newline.
 
-Ensure that the thinking process is thorough but remains focused on the query.
-The final answer should be standalone and not reference the thinking section.
-`.trim();
+// Ensure that the thinking process is thorough but remains focused on the query.
+// The final answer should be standalone and not reference the thinking section.
+// `.trim();
 
-fullContext = [{
-    role: "system",
-    content: R1_SYSTEM_PROMPT
-}]
+fullContext = [
+//{
+//     role: "system",
+//     content: R1_SYSTEM_PROMPT
+// }
+]
 
 // Markdown configuration
 marked.setOptions({
@@ -42,7 +43,7 @@ marked.setOptions({
 // or
 // ^ or _
 function looksLikeLatex(s) {
-    return /\\[a-zA-Z]+|[\^_]/.test(s);
+    return /\\[a-zA-Z]+|[\^_]|\s\d+\s/.test(s);
 }
 
 // Parse the LaTeX, and replace likely LaTeX function delimeters
@@ -142,16 +143,14 @@ function addMessage(text, type) {
 
             const parsedHTML = marked.parse(text);
             message.innerHTML = normalizeLatex(parsedHTML);
-
             renderMathInElement(message, {
                 delimiters: [
-                    {left: "$$", right: "$$", display: true},
-                    {left: "\\$", right: "\\$", display: false},
                     {left: "\\(", right: "\\)", display: false},
                     {left: "\\[", right: "\\]", display: true}
                 ],
                 throwOnError: false
             });
+
 
             // Highlight code blocks, add copy button
             setupCodeBlocks(message);
@@ -231,19 +230,18 @@ async function sendMessage() {
     userInput.focus();
 
     // Add date time for the AI to reference
-    const today = new Date();
-    fullContext.push({
-        role: "system",
-        content: `Current date/time (authoritative and real time): ${day_of_week[today.getDay()]}, \
-        ${current_month[today.getMonth() - 1]} ${today.getDate()}, ${today.getFullYear()} \
-        ${today.getHours()}:${today.getMinutes()} ${today.getHours() > 11 ? "PM" : "AM"}`
-    });
+    // const today = new Date();
+    // fullContext.push({
+    //     role: "system",
+    //     content: `Current date/time (authoritative and real time): ${day_of_week[today.getDay()]}, \
+    //     ${current_month[today.getMonth() - 1]} ${today.getDate()}, ${today.getFullYear()} \
+    //     ${today.getHours()}:${today.getMinutes()} ${today.getHours() > 11 ? "PM" : "AM"}`
+    // });
 
     // Add the user's message
     fullContext.push({
         role: "user",
-        content: text,
-        think: "true"
+        content: text
     });
 
     // Ask the server for a response
@@ -253,7 +251,7 @@ async function sendMessage() {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: "hf.co/lmstudio-community/InternVL3_5-14B-GGUF:Q4_K_M",
+            model: "chat_assistant_thinking:latest",
             messages: fullContext,
             stream: true
         })
