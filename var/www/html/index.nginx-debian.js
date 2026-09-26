@@ -9,27 +9,7 @@ let thinking = false;
 day_of_week=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 current_month=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
 
-// TODO: Handle the full context on the server side.
-// const R1_SYSTEM_PROMPT = `
-// You are an AI assistant that rigorously follows this response protocol:
-
-// 1. First, conduct a detailed analysis of the question. Consider different angles,
-// potential solutions, and reason through the problem step-by-step. Enclose this
-// entire thinking process within <think> and </think> tags.
-
-// 2. After the thinking section, provide a clear, concise, and direct answer to
-// the user's question. Separate the answer from the think section with a newline.
-
-// Ensure that the thinking process is thorough but remains focused on the query.
-// The final answer should be standalone and not reference the thinking section.
-// `.trim();
-
-fullContext = [
-//{
-//     role: "system",
-//     content: R1_SYSTEM_PROMPT
-// }
-]
+fullContext = []
 
 // Markdown configuration
 marked.setOptions({
