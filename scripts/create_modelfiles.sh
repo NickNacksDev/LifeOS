@@ -24,14 +24,15 @@ print_success() {
 }
 
 # Get list of directories in current directory
-modelfile_directories=`ls -d */`
+modelfile_directories=`ls -d ../modelfiles/*/`
 
 # Ensure each directory contains a modelfile
 # Then, create that modelfile
 for directory in ${modelfile_directories[@]}; do
     if check_for_modelfile_in_dir "$directory"; then
-        ollama create -f $directory/Modelfile ${directory%?} &> /dev/null
-        [ $? -eq 0 ] && print_success "${directory%?}" || print_error "${directory%?}"
+        filename=`echo ${directory%?} | xargs -n 1 basename`
+        ollama create -f $directory/Modelfile "$filename" &> /dev/null
+        [ $? -eq 0 ] && print_success "$filename" || print_error "$filename"
     else
         echo "${directory%?}: Modelfile not found. Skipping..."
     fi
