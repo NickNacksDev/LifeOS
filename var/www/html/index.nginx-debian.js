@@ -9,6 +9,46 @@ let thinking = false;
 day_of_week=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 current_month=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
 
+// It is important to preserve the order of this schema.
+// This allows the AI to reason through a request prior to selecting actions, arguments, queries, etc.
+// as the tokens are generated.
+// TODO: Response schema should NOT be sent from the client side. There is an active task to move this 
+// to the server side.
+const responseSchema = {
+    type: "object",
+    properties: {
+        thinking: {
+            type: "string"
+        },
+        action: {
+            type: "string",
+            enum: ["none", "set_lights", "lookup", "get_current_time", "set_temperature"]
+        },
+        arguments: {
+            anyOf: [
+                {
+                    type: "string",
+                    enum: ["none", "on", "off"]
+                },
+                {
+                    type: "number"
+                }
+            ]
+        },
+        response: {
+            type: "string"
+        },
+        resendPrompt: {
+            type: "boolean"
+        },
+        query: {
+            type: "string"
+        }
+    },
+    required: ["thinking", "response", "action", "arguments", "resendPrompt", "query"],
+    additionalProperties: false
+};
+
 fullContext = []
 
 // Markdown configuration
@@ -233,7 +273,8 @@ async function sendMessage() {
         body: JSON.stringify({
             model: "chat_assistant_thinking:latest",
             messages: fullContext,
-            stream: true
+            stream: true,
+            format: responseSchema
         })
     });
 
