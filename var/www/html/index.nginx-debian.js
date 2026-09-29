@@ -3,53 +3,11 @@ const chatbox = document.getElementById("chatbox");
 const userInput = document.getElementById("userInput");
 const sendButton = document.getElementById("sendButton");
 let token_count = 0;
+
+// Config items, separate these out at some point
+lookup = false;
 let thinking = false;
-
-// Contextual AI information
-day_of_week=["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-current_month=["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec"]
-
-// It is important to preserve the order of this schema.
-// This allows the AI to reason through a request prior to selecting actions, arguments, queries, etc.
-// as the tokens are generated.
-// TODO: Response schema should NOT be sent from the client side. There is an active task to move this 
-// to the server side.
-const responseSchema = {
-    type: "object",
-    properties: {
-        thinking: {
-            type: "string"
-        },
-        action: {
-            type: "string",
-            enum: ["none", "set_lights", "lookup", "get_current_time", "set_temperature"]
-        },
-        arguments: {
-            anyOf: [
-                {
-                    type: "string",
-                    enum: ["none", "on", "off"]
-                },
-                {
-                    type: "number"
-                }
-            ]
-        },
-        response: {
-            type: "string"
-        },
-        resendPrompt: {
-            type: "boolean"
-        },
-        query: {
-            type: "string"
-        }
-    },
-    required: ["thinking", "response", "action", "arguments", "resendPrompt", "query"],
-    additionalProperties: false
-};
-
-fullContext = []
+const debug = true;
 
 // Markdown configuration
 marked.setOptions({
@@ -134,32 +92,30 @@ function addMessage(text, type) {
 
     // Return an object that can be updated with the new streamed message content
     return {
-        update(text, done=false) {
-            if (String(text).trim().startsWith("<think>") && !String(text).includes("</think>")) {
-                if (!thinking) {
-                    message.innerHTML = `
-                    <div class="thinking-indicator">
-                        <div class="thinking-pulse">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                        <span class="thinking-text">Thinking</span>
-                    </div>
-                    `;
+        update(text = "", _thinking = "", _action = "", _arguments = [], _resendPrompt = false, _query = "") {
+            if (debug) {
+                stats = `Thinking: ${_thinking}\n`;
+                stats += `Action: ${_action}\n`;
+                stats += `Arguments: ${_arguments}\n`;
+                stats += `Resend Prompt: ${_resendPrompt}\n`;
+                stats += `Query: ${_query}\n`;
+                message.title = stats;
+            }
 
-                    thinking = true;
-                }
+            if (thinking || lookup) {
+                message.innerHTML = `
+                <div class="thinking-indicator">
+                    <div class="thinking-pulse">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span class="thinking-text">${thinking ? "Thinking" : `Researching: ${_query}` }</span>
+                </div>
+                `;
                 return;
             }
 
-            if (String(text).includes("</think>")) {
-                thinking = false;
-                text = String(text).split("</think>")[1];
-                if (!String(text).trim()) {
-                    return;
-                }
-            }
 
             const parsedHTML = marked.parse(text);
             message.innerHTML = normalizeLatex(parsedHTML);
@@ -170,7 +126,6 @@ function addMessage(text, type) {
                 ],
                 throwOnError: false
             });
-
 
             // Highlight code blocks, add copy button
             setupCodeBlocks(message);
@@ -249,37 +204,24 @@ async function sendMessage() {
     userInput.value = "";
     userInput.focus();
 
-    // Add date time for the AI to reference
-    // const today = new Date();
-    // fullContext.push({
-    //     role: "system",
-    //     content: `Current date/time (authoritative and real time): ${day_of_week[today.getDay()]}, \
-    //     ${current_month[today.getMonth() - 1]} ${today.getDate()}, ${today.getFullYear()} \
-    //     ${today.getHours()}:${today.getMinutes()} ${today.getHours() > 11 ? "PM" : "AM"}`
-    // });
-
-    // Add the user's message
-    fullContext.push({
-        role: "user",
-        content: text
-    });
-
     // Ask the server for a response
-    const response = await fetch("http://192.168.0.69:11434/api/chat", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            model: "chat_assistant_thinking:latest",
-            messages: fullContext,
-            stream: true,
-            format: responseSchema
-        })
-    });
+    let response;
+    try {
+        response = await fetch("http://192.168.0.69:8000/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "text/plain"
+            },
+            body: text
+        });
 
-    if (!response.ok) {
-        addMessage("Sorry, something went wrong.", "received");
+        if (!response.ok) {
+            addMessage("Sorry, something went wrong.", "received");
+            return;
+        }
+    } 
+    catch (error) {
+        addMessage("Error. LifeOS API server appears to be down.", "received");
         return;
     }
     
@@ -299,18 +241,30 @@ async function sendMessage() {
         buffer += decoder.decode(value, {stream: true});
 
         const lines = buffer.split("\n");
-        buffer = lines.pop();
-
         for (const line of lines) {
             if (!line.trim()) continue;
 
             const data = JSON.parse(line);
-            if (data.message?.content) {
-                messageString += data.message.content;
-                responseMessage.update(messageString, data.done);
+            if (data["message"] == "<thinking>" && !thinking) {
+                lookup = false;
+                thinking = true;
+                responseMessage.update()
+            }
+            else if (data["message"] == "<lookup>" && !lookup) {
+                lookup = true;
+                thinking = false;
+                responseMessage.update("", data["thinking"], "", [], false, data["query"])
+            }
+            else if (data["message"] != "<thinking>" && data["message"] != "<lookup>") {
+                thinking = false;
+                lookup = false;
+                responseMessage.update(data["message"], data["thinking"], data.action, data.args, data.resend, data.query);
             }
 
             if (data.done) {
+                thinking = false;
+                lookup = false;
+
                 // Update token count
                 const tokenCounter = document.getElementById("tokenCount");
                 token_count = data["prompt_eval_count"] + data["eval_count"];
