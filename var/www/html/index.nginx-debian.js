@@ -2,10 +2,14 @@
 const chatbox = document.getElementById("chatbox");
 const userInput = document.getElementById("userInput");
 const sendButton = document.getElementById("sendButton");
+const addImageButton = document.getElementById("addImageButton");
+const imageInput = document.getElementById("imageInput");
+const imagePreview = document.getElementById("imagePreview");
 let token_count = 0;
 
 // Config items, separate these out at some point
-lookup = false;
+let attachedFiles = [];
+let lookup = false;
 let thinking = false;
 const debug = true;
 
@@ -191,11 +195,16 @@ function setupCodeBlocks(container) {
 async function sendMessage() {
     // Grab user input
     const text = userInput.value.trim();
-
+    
     // Do not send messages with no text / only whitespace
     if (!text) {
         return;
     }
+
+    const formdata = new FormData();
+    formdata.append("message", text);
+
+    // TODO: add image/file to visible message
 
     // Add message to dialog
     addMessage(text, "sent");
@@ -204,18 +213,31 @@ async function sendMessage() {
     userInput.value = "";
     userInput.focus();
 
+    if (attachedFiles.length > 0) {
+        console.log("Sending image!");
+        formdata.append(
+            "image", 
+            new Blob([attachedFiles[0]], {type: "image/png"}), 
+            "image.png");
+
+        // Reset the attached files
+        attachedFiles = [];
+
+        // Remove preview
+        imagePreview.innerHTML = "";
+    }
+
     // Ask the server for a response
     let response;
     try {
         response = await fetch("http://192.168.0.69:8000/api/chat", {
             method: "POST",
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: text
+            body: formdata
         });
 
         if (!response.ok) {
+            console.log("Status: ", response.status);
+            console.log("Response: ", response.text());
             addMessage("Sorry, something went wrong.", "received");
             return;
         }
@@ -282,6 +304,35 @@ async function sendMessage() {
     }
 }
 
+
+addImageButton.addEventListener("click", () => {
+    console.log("Plus button clicked!")
+    imageInput.click();
+});
+
+imageInput.addEventListener("change", async () => {
+    const file = imageInput.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    console.log("Selected file:", file.name);
+
+    // Keep ahold of the file in "attachedFiles"
+    // Grab the bytes and store it there.
+    const arrayBuffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+
+    // This is what is sent to the server
+    // (right now, only 1 image can be previewed and sent, update later)
+    attachedFiles = [];
+    attachedFiles.push(bytes);
+
+    // This renders a preview on the page
+    const imageUrl = URL.createObjectURL(file);
+    imagePreview.innerHTML = `<img src="${imageUrl}" alt="Selected image">`;
+});
 
 // Handle send button press
 sendButton.addEventListener(

@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Body
+from fastapi import FastAPI, Body, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from partialjson import JSONParser
 import json
 import httpx
+import base64
 
 app = FastAPI()
 app.add_middleware(
@@ -62,11 +63,18 @@ async def root():
     return {"message": "Hello, LifeOS!"}
 
 @app.post("/api/chat")
-async def chat(message: str = Body(..., media_type="text/plain")):
+async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
+    images = []
+
+    if image:
+        image_bytes = await image.read()
+        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        images.append(image_base64)
 
     fullContext.append({
         "role": "user",
-        "content": message
+        "content": message,
+        "images": images
     })
 
     async def ollama_stream():

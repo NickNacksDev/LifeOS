@@ -20,7 +20,10 @@
 <body>
     <div id="container">
         <div id="chatbox"></div>
+        <input type="file" id="imageInput" accept="image/*" hidden />
+        <div id="imagePreview"></div>
         <div id="responsebox">
+            <button id="addImageButton" title="Click here to add an image to the context">+</button>
             <textarea
             id="userInput"
             type="text"
@@ -30,7 +33,7 @@
                 <button id="sendButton">
                     Send
                 </button>
-                <p id="tokenCount" style="font-size: 14px; margin: 2px;">Token count: 0</p>
+                <p id="tokenCount" style="font-size: 14px; margin: 2px; margin-left: 16px;">Token count: 0</p>
             </div>
         </div>
     </div>

@@ -813,6 +813,7 @@ dependencies = [
     { name = "fastapi", extra = ["standard"] },
     { name = "httpx" },
     { name = "partialjson" },
+    { name = "python-multipart" },
 ]
 
 [package.metadata]
@@ -820,6 +821,7 @@ requires-dist = [
     { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "partialjson", specifier = ">=1.2.0" },
+    { name = "python-multipart", specifier = ">=0.0.32" },
 ]
 
 [[package]]
