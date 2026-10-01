@@ -82,6 +82,12 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
         compiled_json = ""
 
         async with httpx.AsyncClient(timeout=120.0) as client:
+            # State management to reduce traffic
+            prev_thinking = False
+            thinking = False
+            prev_lookup = False
+            lookup = False
+
             async with client.stream(
                 "POST",
                 "http://127.0.0.1:11434/api/chat",
@@ -104,7 +110,6 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     ollama_chunk = json.loads(line)
 
                     # Grab the content chunk of the message
-                    print(ollama_chunk)
                     content_chunk = ollama_chunk["message"]["content"]
                     compiled_json += content_chunk
 
@@ -113,7 +118,11 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     # And now check for each field. Print the field when it's complete (as a test)
 
                     response = ""
-                    if parsed.get("response") is not None and parsed["action"] != "lookup":
+                    if parsed.get("response") is not None: # and parsed["action"] != "lookup": # (TODO uncomment when lookup implemented)
+                        # Response means that thinking is done
+                        # Lookup is handled separately (TODO)
+                        thinking = False
+                        lookup = False # change this
                         response = json.dumps({
                             "thinking": parsed["thinking"],
                             "query": parsed["query"],
@@ -123,6 +132,9 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                             "message": parsed["response"]
                         }) + "\n"
                     elif parsed.get("action") == "lookup":
+                        # Lookup definitely means thinking is complete
+                        thinking = False
+                        lookup = True
                         response = json.dumps({
                             "query": parsed["query"],
                             "thinking": parsed["thinking"],
@@ -130,6 +142,9 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                             "done": False
                         }) + "\n"
                     else:
+                        # Thinking comes before lookup (see schema definition)
+                        thinking = True
+                        lookup = False
                         response = json.dumps({
                             "message": "<thinking>",
                             "done": False
@@ -143,7 +158,20 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                             "images": images
                         })
 
-                    yield response
+                    yieldThinkingMessage = thinking and not prev_thinking
+                    yieldLookupMessage = lookup and not prev_lookup
+                    yieldNormalMessage = not lookup and not thinking
+                    if yieldThinkingMessage or yieldLookupMessage:
+                        prev_lookup = True
+                        prev_thinking = True
+                        print(response)
+                        yield response
+
+                    if yieldNormalMessage:
+                        prev_lookup = False
+                        prev_thinking = False
+                        print(response)
+                        yield response
 
     return StreamingResponse(
         ollama_stream(),
