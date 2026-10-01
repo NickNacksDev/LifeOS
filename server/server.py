@@ -104,6 +104,7 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     ollama_chunk = json.loads(line)
 
                     # Grab the content chunk of the message
+                    print(ollama_chunk)
                     content_chunk = ollama_chunk["message"]["content"]
                     compiled_json += content_chunk
 
@@ -134,7 +135,14 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                             "done": False
                         }) + "\n"
 
-                    print(response)
+                    if ollama_chunk["done"]:
+                        # Add the AI response to the context
+                        fullContext.append({
+                            "role": "assistant",
+                            "content": response,
+                            "images": images
+                        })
+
                     yield response
 
     return StreamingResponse(
