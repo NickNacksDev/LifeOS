@@ -161,9 +161,13 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     yieldThinkingMessage = thinking and not prev_thinking
                     yieldLookupMessage = lookup and not prev_lookup
                     yieldNormalMessage = not lookup and not thinking
-                    if yieldThinkingMessage or yieldLookupMessage:
-                        prev_lookup = True
+                    if yieldThinkingMessage:
                         prev_thinking = True
+                        print(response)
+                        yield response
+
+                    if yieldLookupMessage:
+                        prev_lookup = True
                         print(response)
                         yield response
 
