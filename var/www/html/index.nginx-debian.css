@@ -2,27 +2,36 @@
     box-sizing: border-box;
 }
 
-html,body {
+html, body {
     width: 100%;
     height: 100%;
     margin: 0;
     padding: 0;
 
     font-family: system-ui, sans-serif;
+
+    background: #0f1115;
+    color: #e6e6e6;
 }
+
+/* =========================
+   Main layout
+   ========================= */
 
 #container {
     width: 100%;
-    height: 100vh;
     height: 100dvh;
 
     display: grid;
 
     /*
-        Row 1 = chatbox takes remaining space
-        Row 2 = responsebox takes natural height
+        Row 1 = navigation
+        Row 2 = chatbox takes remaining space
+        Row 3 = responsebox
     */
-    grid-template-rows: 1fr auto;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+
+    gap: 10px;
 
     /*
         Top    = 1%
@@ -30,17 +39,206 @@ html,body {
         Bottom = 0
         Left   = 1%
     */
-    padding: 1% 1% 0 1%;
+
+    overflow: hidden;
 }
 
+/* =========================
+   Navigation
+   ========================= */
+
+.top-nav {
+    height: 68px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 22px;
+
+    background: #111318;
+
+    border: 1px solid #292d36;
+
+    border-right: none;
+    border-left: none;
+
+    box-shadow:
+        0 4px 20px rgba(0, 0, 0, 0.25);
+
+    position: relative;
+    z-index: 10;
+}
+
+/* Brand */
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    margin-right: 42px;
+
+    color: #f2f3f5;
+
+    font-size: 19px;
+    font-weight: 650;
+    letter-spacing: -0.3px;
+
+    user-select: none;
+}
+
+.nav-brand::before {
+    content: "";
+
+    width: 10px;
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: #7c8cff;
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.7),
+        0 0 18px rgba(124, 140, 255, 0.25);
+}
+
+/* Tab container */
+
+.nav-tabs {
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    height: 100%;
+}
+
+/* Individual tabs */
+
+.nav-tab {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 42px;
+
+    padding: 0 17px;
+
+    border: none;
+
+    background: transparent;
+
+    color: #858b97;
+
+    cursor: pointer;
+
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+
+    transition:
+        color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.nav-tab:hover {
+    color: #e4e7ec;
+}
+
+.nav-tab:active {
+    transform: scale(0.97);
+}
+
+/* Underline */
+
+.nav-tab::after {
+    content: "";
+
+    position: absolute;
+
+    left: 50%;
+
+    bottom: 1px;
+
+    height: 3px;
+
+    width: 0;
+
+    transform: translateX(-50%);
+
+    border-radius: 999px;
+
+    background: #7c8cff;
+
+    opacity: 0;
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.55);
+
+    transition:
+        width 0.22s ease,
+        opacity 0.18s ease;
+}
+
+.nav-tab:hover::after {
+    width: 18px;
+    opacity: 0.8;
+}
+
+.nav-tab.active::after {
+    width: calc(100% - 8px);
+    opacity: 1;
+}
+
+.nav-tab.active {
+    color: #f5f6f8;
+}
+
+/* Right-side actions */
+
+.nav-actions {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+}
+
+.nav-actions .nav-tab {
+    width: 42px;
+    padding: 0;
+}
+
+.nav-actions .nav-tab:hover {
+    color: #e4e7ec;
+}
+
+/* Divider before utility buttons */
+
+.nav-actions::before {
+    content: "";
+
+    width: 1px;
+    height: 26px;
+
+    margin-right: 8px;
+
+    background: #2c3038;
+}
+
+/* =========================
+   Chat
+   ========================= */
+
 #chatbox {
-    width: 100%;
+    width: calc(100% - 20px);
     min-height: 0;
 
-    border: 1px solid black;
-
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
+    border: 1px solid #2c3038;
+    border-radius: 10px;
 
     padding: 24px;
 
@@ -52,13 +250,15 @@ html,body {
 
     gap: 12px;
 
-    background: #f5f5f5;
+    background: #15181e;
+
+    scrollbar-width: thin;
+    scrollbar-color: #3b414c transparent;
+    
+    margin-left: 10px;
 }
 
-#chatbox {
-    scrollbar-width: thin;
-    scrollbar-color: #c5c5c5 transparent;
-}
+/* Scrollbar */
 
 #chatbox::-webkit-scrollbar {
     width: 6px;
@@ -69,122 +269,277 @@ html,body {
 }
 
 #chatbox::-webkit-scrollbar-thumb {
-    background: #c5c5c5;
+    background: #3b414c;
     border-radius: 999px;
 }
 
 #chatbox::-webkit-scrollbar-thumb:hover {
-    background: #999;
+    background: #555d69;
 }
 
-/* Message bubble styling */
+/* =========================
+   Message bubbles
+   ========================= */
+
 .message {
     max-width: 75%;
+
     padding: 12px 16px;
-    border: 1px solid #aaa;
+
+    border: 1px solid #414856;
     border-radius: 14px;
+
     line-height: 1.5;
     overflow-wrap: break-word;
+
+    color: #e6e6e6;
+
+    box-shadow:
+        0 0 6px rgba(124, 140, 255, 0.12);
 }
 
 .message.received {
     align-self: flex-start;
-    background: #dff1ff;
-    border-color: #9ac9e8;
+
+    background: #1d2733;
+    border-color: #465b73;
+
     border-top-left-radius: 4px;
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.16),
+        0 0 14px rgba(124, 140, 255, 0.06);
 }
 
 .message.sent {
     align-self: flex-end;
-    background: white;
-    border-color: #aaa;
+
+    background: #252932;
+    border-color: #414856;
+
     border-top-right-radius: 4px;
+
+    box-shadow:
+        0 0 6px rgba(124, 140, 255, 0.10);
 }
 
-/* Container for user input and send button */
+/* =========================
+   Image preview
+   ========================= */
+
+#imagePreview {
+    position: absolute;
+}
+
+#imagePreview img {
+    width: 50px;
+    height: 50px;
+
+    object-fit: cover;
+
+    border-radius: 6px;
+
+    border: 1px solid #414856;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.12);
+}
+
+/* =========================
+   User input area
+   ========================= */
+
 #responsebox {
     width: 100%;
     min-height: 70px;
-    margin-bottom: 12px;
-    border: 1px solid black;
-    border-bottom-left-radius: 10px;
-    border-bottom-right-radius: 10px;
+
+    margin-bottom: 0;
+
+    border: 1px solid #3f4655;
+    border-left: none;
+    border-right: none;
+
     padding: 12px 14px;
+
     display: flex;
     align-items: center;
-    background: white;
+
+    background: #15181e;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.22),
+        0 0 18px rgba(124, 140, 255, 0.10);
 }
 
 #userInput {
     flex: 1;
     min-width: 0;
     min-height: 30px;
+
     font-size: 20px;
+
     padding: 6px 10px;
-    border: 1px solid #aaa;
+
+    border: 1px solid #454c5b;
+
     border-top-right-radius: 8px;
     border-bottom-right-radius: 8px;
+
+    background: #1d2027;
+    color: #e6e6e6;
+
+    outline: none;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.18),
+        0 0 14px rgba(124, 140, 255, 0.08);
 }
+
+#userInput:focus {
+    border-color: #707bb0;
+    background: #20242c;
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.35),
+        0 0 18px rgba(124, 140, 255, 0.15);
+}
+
+#userInput::placeholder {
+    color: #777f8c;
+}
+
+/* =========================
+   Image button
+   ========================= */
 
 #addImageButton {
-    border: none;
     border-bottom-left-radius: 8px;
     border-top-left-radius: 8px;
+
     min-height: 60px;
     min-width: 60px;
+
     font-size: 36px;
+
     cursor: pointer;
+
+    background: #252932;
+    color: #d5d8dd;
+
+    border: 1px solid #3f4655;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.14),
+        0 0 14px rgba(124, 140, 255, 0.06);
 }
 
-#imagePreview img {
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    border-radius: 6px;
-    border: 1px solid #aaa;
+#addImageButton:hover {
+    background: #30353f;
+
+    border-color: #566079;
+
+    box-shadow:
+        0 0 9px rgba(124, 140, 255, 0.28),
+        0 0 18px rgba(124, 140, 255, 0.12);
 }
+
+/* =========================
+   Send button
+   ========================= */
 
 #sendButton {
     min-width: 140px;
     min-height: 30px;
+
     margin-left: 16px;
+
     cursor: pointer;
+
+    border: 1px solid #3f4655;
+    border-radius: 8px;
+
+    background: #252932;
+    color: #e6e6e6;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.14),
+        0 0 14px rgba(124, 140, 255, 0.06);
 }
 
-/* Used to style code blocks */
+#sendButton:hover {
+    background: #30353f;
+
+    border-color: #566079;
+
+    box-shadow:
+        0 0 9px rgba(124, 140, 255, 0.28),
+        0 0 18px rgba(124, 140, 255, 0.12);
+}
+
+/* =========================
+   Markdown / code
+   ========================= */
+
 pre {
     background: #0d1117;
-    border: 2px solid #555;
+
+    border: 2px solid #3d4451;
+
     border-radius: 8px;
+
     padding: 16px;
+
     overflow: auto;
+
+    box-shadow:
+        0 0 7px rgba(124, 140, 255, 0.12);
 }
 
-/* TODO: ??? */
 code:not(pre code) {
-    background: #eee;
+    background: #252932;
+
+    color: #e6e6e6;
+
     padding: 2px 5px;
+
     border-radius: 4px;
 }
 
-/* stylizing tables */
+/* =========================
+   Tables
+   ========================= */
+
 table {
     border-collapse: collapse;
 }
 
-td,th {
-    border: 1px solid #aaa;
+td,
+th {
+    border: 1px solid #414856;
+
     padding: 6px 10px;
 }
 
-/* Block quotes */
-blockquote {
-    border-left: 4px solid #999;
-    padding-left: 1em;
-    color: #666;
+th {
+    background: #20242b;
 }
 
-/* Stylize code containers */
+/* =========================
+   Block quotes
+   ========================= */
+
+blockquote {
+    border-left: 4px solid #555d69;
+
+    padding-left: 1em;
+
+    color: #9aa1ac;
+}
+
+/* =========================
+   Code containers
+   ========================= */
+
 .code-container {
     position: relative;
     margin: 1.2em 0;
@@ -196,16 +551,23 @@ blockquote {
 
 .copy-button {
     position: absolute;
+
     top: 10px;
     right: 10px;
+
     background: #2d333b;
     color: white;
-    border: 1px solid #666;
+
+    border: 1px solid #555d69;
     border-radius: 6px;
+
     padding: 4px 10px;
+
     cursor: pointer;
     font-size: 12px;
+
     opacity: 0.85;
+
     transition: opacity 0.15s;
 }
 
@@ -213,10 +575,8 @@ blockquote {
     opacity: 1;
 }
 
-/*
-   Remove excessive top/bottom margins from the
-   first and last Markdown elements inside bubbles.
-*/
+/* Remove excessive Markdown margins */
+
 .message > :first-child {
     margin-top: 0;
 }
@@ -225,27 +585,39 @@ blockquote {
     margin-bottom: 0;
 }
 
+/* =========================
+   Thinking indicator
+   ========================= */
+
 .thinking-indicator {
     display: inline-flex;
     align-items: center;
+
     gap: 10px;
+
     padding: 4px 0;
 }
 
 .thinking-pulse {
     display: inline-flex;
     align-items: center;
+
     gap: 5px;
 }
 
 .thinking-pulse span {
     display: block;
+
     width: 7px;
     height: 7px;
+
     min-width: 7px;
     min-height: 7px;
+
     border-radius: 50%;
+
     background: #888;
+
     animation: thinkingPulse 1.4s infinite ease-in-out;
 }
 
@@ -263,6 +635,7 @@ blockquote {
 
 .thinking-text {
     color: #888;
+
     animation: thinkingFade 2s infinite ease-in-out;
 }
 

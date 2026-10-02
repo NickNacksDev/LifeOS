@@ -387,5 +387,17 @@ userInput.addEventListener(
 const value =`Hello! What can I help you with today?`;
 addMessage(value, "received");
 
-// ollama run on server:
-            //const data = JSON.parse(buffer);
+document.querySelectorAll(".nav-tab").forEach(tab => {
+    tab.addEventListener("click", () => {
+        const page = tab.dataset.page;
+
+        document.querySelectorAll(".nav-tab")
+            .forEach(t => t.classList.remove("active"));
+
+        document.querySelectorAll(".page")
+            .forEach(p => p.classList.remove("active"));
+
+        tab.classList.add("active");
+        document.getElementById(`${page}-page`).classList.add("active");
+    });
+});

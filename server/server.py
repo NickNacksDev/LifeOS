@@ -64,7 +64,10 @@ async def root():
 
 @app.post("/api/chat")
 async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
+    global fullContext
     images = []
+    do_command = False
+
 
     if image:
         image_bytes = await image.read()
@@ -76,6 +79,14 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
         "content": message,
         "images": images
     })
+    
+    if message:
+        # Check for commands
+        if message == "/help":
+            do_command = True
+        elif message == "/reset_context":
+            do_command = True
+            fullContext = []
 
     async def ollama_stream():
         parser = JSONParser()
@@ -113,6 +124,9 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     content_chunk = ollama_chunk["message"]["content"]
                     compiled_json += content_chunk
 
+                    # Also, log chunks as they come in
+                    print(content_chunk, end="")
+
                     # Parse the partial JSON
                     parsed = parser.parse(compiled_json)
                     # And now check for each field. Print the field when it's complete (as a test)
@@ -122,7 +136,7 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                         # Response means that thinking is done
                         # Lookup is handled separately (TODO)
                         thinking = False
-                        lookup = False # change this
+                        lookollama_streamup = False # change this
                         response = json.dumps({
                             "thinking": parsed["thinking"],
                             "query": parsed["query"],
@@ -163,21 +177,27 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     yieldNormalMessage = not lookup and not thinking
                     if yieldThinkingMessage:
                         prev_thinking = True
-                        print(response)
                         yield response
 
                     if yieldLookupMessage:
                         prev_lookup = True
-                        print(response)
                         yield response
 
                     if yieldNormalMessage:
                         prev_lookup = False
                         prev_thinking = False
-                        print(response)
                         yield response
 
+    commands = "/reset_context - Reset's this conversation's context"
+
+    commandsResponse = json.dumps({
+        "message": "Context has been reset."
+    }) + "\n"
+
+    print(commandsResponse)
+    print(do_command)
+
     return StreamingResponse(
-        ollama_stream(),
-        media_type="application/x-ndjson"
+        ollama_stream() if not do_command else commandsResponse,
+        media_type="application/x-ndjson" # newline delimited json
     )
