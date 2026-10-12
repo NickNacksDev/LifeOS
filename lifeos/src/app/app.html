@@ -1,0 +1,14 @@
+<div id="container">
+  <app-navbar
+    [activePage]="activePage"
+    (pageSelected)="selectPage($event)">
+  </app-navbar>
+
+  @if (activePage === 'chat') {
+    <app-chat></app-chat>
+  }
+
+  @if (activePage === 'calendar') {
+    <app-calendar></app-calendar>
+  }
+</div>

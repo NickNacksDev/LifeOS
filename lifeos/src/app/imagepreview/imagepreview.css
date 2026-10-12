@@ -1,0 +1,45 @@
+:host {
+    height: 75px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.image-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.image-container {
+  position: relative;
+  max-height: 75px;
+  max-width: 75px;
+}
+
+.image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.remove-button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #ffffff40;
+  border-radius: 50%;
+  background: #252b36;
+  color: white;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.remove-button:hover {
+  background: #d93648;
+}

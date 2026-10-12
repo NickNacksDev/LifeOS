@@ -1,0 +1,28 @@
+<div id="chatbox">
+    @for (message of messages; track message) {
+        <app-chatmessage 
+            [content]="message.content" 
+            [messageClass]="message.messageClass"
+            [images]="message.images"></app-chatmessage>
+    }
+</div>
+<input #fileInput type="file" id="imageInput" accept="image/*" (change)="onFilesSelected($event)" multiple hidden />
+@if (attachedFilePreviews.length > 0) {
+    <app-imagepreview [(images)]="attachedFilePreviews"></app-imagepreview>
+}
+<div id="responsebox">
+    <button id="addImageButton" title="Click here to add an image to the context" (click)="fileInput.click()">+</button>
+    <textarea
+        #userInput
+        id="userInput"
+        type="text"
+        placeholder="Type a message..."
+        (keydown)="onKeyDown($event)"></textarea>
+    
+    <div id="sendbuttonarea">
+        <button id="sendButton" (click)="sendMessage(userInput)">
+            Send
+        </button>
+        <p id="tokenCount" style="font-size: 14px; margin: 2px; margin-left: 16px;">{{ printTokenCount() }}</p>
+    </div>
+</div>

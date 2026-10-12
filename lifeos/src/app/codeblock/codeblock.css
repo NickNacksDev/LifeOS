@@ -1,0 +1,69 @@
+:host {
+    display: block;
+    width: 100%;
+    min-width: 0;
+}
+
+.code-container {
+    overflow: hidden;
+    margin: 12px 0;
+    border: 1px solid #414856;
+    border-radius: 8px;
+    background: #0d1117;
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid #414856;
+    background: #161b22;
+}
+
+.code-language {
+    color: #a5adba;
+    font-size: 12px;
+    text-transform: lowercase;
+}
+
+.copy-button {
+    padding: 4px 10px;
+    border: 1px solid #414856;
+    border-radius: 5px;
+    background: transparent;
+    color: #c9d1d9;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 150ms ease, border-color 150ms ease;
+}
+
+.copy-button:hover {
+    background: #30363d;
+    border-color: #6e7681;
+}
+
+.copy-button:focus-visible {
+    outline: 2px solid #58a6ff;
+    outline-offset: 2px;
+}
+
+pre {
+    max-width: 100%;
+    margin: 0;
+    padding: 16px;
+    overflow-x: auto;
+    background: transparent;
+    font-size: 13px;
+    line-height: 1.6;
+    tab-size: 4;
+}
+
+pre code {
+    display: block;
+    min-width: fit-content;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    white-space: pre;
+    overflow-wrap: normal;
+    background: transparent;
+}

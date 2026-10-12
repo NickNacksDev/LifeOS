@@ -1,0 +1,138 @@
+.top-nav {
+    position: relative;
+    z-index: 10;
+    height: 68px;
+    display: flex;
+    align-items: center;
+    padding: 0 22px;
+    background: #111318;
+    border-bottom: 1px solid rgba(124, 140, 255, 0.55);
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.55);
+}
+
+/* Brand */
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 42px;
+    color: #f2f3f5;
+    font-size: 19px;
+    font-weight: 650;
+    letter-spacing: -0.3px;
+    user-select: none;
+}
+
+.nav-brand::before {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #7c8cff;
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.7),
+        0 0 18px rgba(124, 140, 255, 0.25);
+}
+
+/* Tab container */
+
+.nav-tabs {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 100%;
+}
+
+/* Individual tabs */
+.nav-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+    padding: 0 17px;
+    border: none;
+    background: transparent;
+    color: #858b97;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+
+    transition:
+        color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.nav-tab:hover {
+    color: #e4e7ec;
+}
+
+.nav-tab:active {
+    transform: scale(0.97);
+}
+
+/* Underline */
+.nav-tab::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 1px;
+    height: 3px;
+    width: 0;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: #7c8cff;
+    opacity: 0;
+
+    box-shadow:
+        0 0 8px rgba(124, 140, 255, 0.55);
+
+    transition:
+        width 0.22s ease,
+        opacity 0.18s ease;
+}
+
+.nav-tab:hover::after {
+    width: 18px;
+    opacity: 0.8;
+}
+
+.nav-tab.active::after {
+    width: calc(100% - 8px);
+    opacity: 1;
+}
+
+.nav-tab.active {
+    color: #f5f6f8;
+}
+
+/* Right-side actions */
+
+.nav-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-actions .nav-tab {
+    width: 42px;
+    padding: 0;
+}
+
+.nav-actions .nav-tab:hover {
+    color: #e4e7ec;
+}
+
+/* Divider before utility buttons */
+.nav-actions::before {
+    content: "";
+    width: 1px;
+    height: 26px;
+    margin-right: 8px;
+    background: #2c3038;
+}

@@ -1,0 +1,37 @@
+/* =========================
+   Message bubbles
+   ========================= */
+
+:host {
+    display: flex;
+    flex-flow: column;
+}
+
+.message {
+    max-width: 75%;
+    padding: 12px 16px;
+    border: 1px solid #414856;
+    border-radius: 14px;
+    line-height: 1.5;
+    overflow-wrap: break-word;
+    color: #e6e6e6;
+}
+
+.message.received {
+    align-self: flex-start;
+    background: #1d2733;
+    border-color: #465b73;
+    border-top-left-radius: 4px;
+}
+
+.message.sent {
+    align-self: flex-end;
+    background: #252932;
+    border-color: #414856;
+    border-top-right-radius: 4px;
+}
+
+img {
+    max-width: 400px;
+    padding: 5px;
+}

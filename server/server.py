@@ -1,3 +1,6 @@
+from PIL import Image, ImageOps, UnidentifiedImageError
+from io import BytesIO
+
 from fastapi import FastAPI, Body, File, Form, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -6,11 +9,13 @@ import json
 import httpx
 import base64
 
+
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://192.168.0.69"
+        "http://192.168.0.69",
+        "http://localhost:4200"
     ],
     allow_methods="*",
     allow_headers="*"
@@ -29,7 +34,7 @@ responseSchema = {
         },
         "action": {
             "type": "string",
-            "enum": ["none", "set_lights", "lookup", "get_current_time", "set_temperature"]
+            "enum": ["none", "set_lights", "", "get_current_time", "set_temperature"]
         },
         "arguments": {
             "anyOf": [
@@ -56,6 +61,41 @@ responseSchema = {
     ]
 }
 
+MAX_IMAGE_PIXELS = 25_000_000
+MAX_DIMENSION = 2048
+ALLOWED_FORMATS = { "JPEG", "PNG", "WEBP", "GIF", "BMP", "TIFF" }
+
+def normalize_image(data: bytes) -> bytes:
+    try:
+        with Image.open(BytesIO(data)) as source:
+            if source.format not in ALLOWED_FORMATS:
+                raise ValueError("Unsupported image format")
+
+            width, height = source.size
+            if width * height > MAX_IMAGE_PIXELS:
+                raise ValueError("Image dimensions exceed the limit")
+
+            source.seek(0)
+            image = ImageOps.exif_transpose(source)
+
+            # Composite transparency onto white
+            if (image.mode in ("RGBA", "LA") or "transparency" in image.info):
+                image = image.convert("RGBA")
+                background = Image.new("RGBA", image.size, "white")
+                background.alpha_composite(image)
+                image = background.convert("RGB")
+            else:
+                image = image.convert("RGB")
+
+            image.thumbnail((MAX_DIMENSION, MAX_DIMENSION))
+
+            output = BytesIO()
+            image.save(output, format="JPEG", quality=90, optimize=True)
+            return output.getvalue()
+
+    except (UnidentifiedImageError, OSError) as exc:
+        raise ValueError("Invalid or unreadable image") from exc
+
 fullContext = []
 
 @app.get("/")
@@ -63,22 +103,24 @@ async def root():
     return {"message": "Hello, LifeOS!"}
 
 @app.post("/api/chat")
-async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
+async def chat(message: str = Form(...), images: list[UploadFile] | None = File(None)):
     global fullContext
-    images = []
+    image_data = []
     do_command = False
 
-
-    if image:
-        image_bytes = await image.read()
-        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
-        images.append(image_base64)
-
-    fullContext.append({
+    context = {
         "role": "user",
-        "content": message,
-        "images": images
-    })
+        "content": message
+    }
+
+    if images is not None:
+        for image in images:
+            image_bytes = await image.read()
+            image_base64 = base64.b64encode(normalize_image(image_bytes)).decode("utf-8")
+            image_data.append(image_base64)
+        context["images"] = image_data
+
+    fullContext.append(context)
     
     if message:
         # Check for commands
@@ -107,10 +149,13 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                     "messages": fullContext,
                     "stream": True,
                     "format": responseSchema
-                }
-            ) as response:
+                }) as response:
 
-                response.raise_for_status()
+                if response.is_error:
+                    error_body = await response.aread()
+                    print(f"Ollama returned HTTP {response.status_code}:")
+                    print(error_body.decode("utf-8", errors="replace"))
+                    response.raise_for_status()
 
                 async for line in response.aiter_lines():
                     if not line:
@@ -136,14 +181,16 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                         # Response means that thinking is done
                         # Lookup is handled separately (TODO)
                         thinking = False
-                        lookollama_streamup = False # change this
+                        ollama_stream = False # change this
                         response = json.dumps({
                             "thinking": parsed["thinking"],
                             "query": parsed["query"],
                             "resend": parsed["resendPrompt"],
                             "action": parsed["action"],
                             "args": parsed["arguments"],
-                            "message": parsed["response"]
+                            "message": parsed["response"],
+                            "done": ollama_chunk["done"],
+                            "token_count": ollama_chunk["prompt_eval_count"] if ollama_chunk["done"] else "..."
                         }) + "\n"
                     elif parsed.get("action") == "lookup":
                         # Lookup definitely means thinking is complete
@@ -168,9 +215,11 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
                         # Add the AI response to the context
                         fullContext.append({
                             "role": "assistant",
-                            "content": response,
-                            "images": images
+                            "content": response
                         })
+
+                        # Log the message that was sent
+                        print()
 
                     yieldThinkingMessage = thinking and not prev_thinking
                     yieldLookupMessage = lookup and not prev_lookup
@@ -193,9 +242,6 @@ async def chat(message: str = Form(...), image: UploadFile | None = File(None)):
     commandsResponse = json.dumps({
         "message": "Context has been reset."
     }) + "\n"
-
-    print(commandsResponse)
-    print(do_command)
 
     return StreamingResponse(
         ollama_stream() if not do_command else commandsResponse,

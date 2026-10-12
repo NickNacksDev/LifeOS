@@ -1,0 +1,15 @@
+<div [class]="messageClass">
+    @for (image of images; track image) {
+        <img [src]="image" />
+    }
+
+    <div class="message-content">
+        @for (segment of segments; track $index) {
+            @if (segment.type === segmentType.text) {
+                <div [innerHTML]="segment.html"></div>
+            } @else if (segment.type === segmentType.code) {
+                <app-codeblock [code]="segment.code" [language]="segment.language"></app-codeblock>
+            }
+        }
+    </div>
+</div>
